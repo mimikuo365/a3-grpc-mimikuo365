@@ -17,18 +17,15 @@ class RedditServer(reddit_pb2_grpc.RedditService):
         print(f"Created Post with ID {post.id}")
         return reddit_pb2.CreatePostResponse(post_id=post.id)
 
-    # def VotePost(self, request, context):
-    #     print("VotePost")
-    #     print(request)
-    #     id = request.post.id
-    #     if id not in database:
-    #         return
-    #     print(database[id])
-    #     if request.vote_type == 1:
-    #         database[id].score += 1
-    #     elif request.vote_type == 2:
-    #         database[id].score -= 1
-    #     return database[id]
+    def VotePost(self, request, context):
+        id = request.post_id
+        if id not in database:
+            return -1
+        if request.vote_type == reddit_pb2.VOTE_TYPE_UPVOTE:
+            database[id].score += 1
+        elif request.vote_type == reddit_pb2.VOTE_TYPE_DOWNVOTE:
+            database[id].score -= 1
+        return reddit_pb2.VoteCommentResponse(score=database[id].score)
 
     # def GetPost(self, request, context):
     #     print("GetPost")
@@ -49,7 +46,6 @@ class RedditServer(reddit_pb2_grpc.RedditService):
     # def ExpandCommentBranch(self, request, context):
     #     print("ExpandCommentBranch")
     #     return reddit_pb2.ExpandCommentBranchResponse()
-
 
 def serve():
     port = "50051"
