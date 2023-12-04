@@ -1,0 +1,170 @@
+syntax = "proto3";
+package reddit.v1;
+
+import "google/protobuf/timestamp.proto";
+
+service RedditService {
+  // Create a Post
+  rpc CreatePost(CreatePostRequest) returns (CreatePostResponse) {}
+
+  // Upvote or downvote a Post
+  rpc VotePost(VotePostRequest) returns (VotePostResponse) {}
+
+  // Retrieve Post content
+  rpc GetPost(GetPostRequest) returns (GetPostResponse) {}
+
+  // Create a Comment
+  rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse) {}
+
+  // Upvote or downvote a Comment
+  rpc VoteComment(VoteCommentRequest) returns (VoteCommentResponse) {}
+
+  // Retrieve N most upvoted comments' content
+  rpc GetTopComments(GetTopCommentsRequest) returns (GetTopCommentsResponse) {}
+
+  // Open N most upvoted comments with their N most upvoted comments (tree of depth 2)
+  rpc ExpandCommentBranch(ExpandCommentBranchRequest) returns (ExpandCommentBranchResponse) {}
+
+  // The client can then add comment IDs to the stream to receive score updates for those comments.
+  rpc MonitorCommentUpdates(stream MonitorCommentUpdatesRequest) returns (stream MonitorCommentUpdatesResponse) {}
+}
+
+message CreatePostResponse {
+  int32 post_id = 1;
+}
+
+message CreatePostRequest {
+  Post post = 1;
+}
+
+message VotePostRequest {
+  int32 post_id = 1;
+  VoteType vote_type = 2;
+}
+
+message VotePostResponse {
+  int32 score = 1;
+}
+
+message GetPostRequest {
+  int32 post_id = 1;
+}
+
+message GetPostResponse {
+  Post post = 1;
+}
+
+message CreateCommentRequest {
+  Comment comment = 1;
+}
+
+message CreateCommentResponse {
+  int32 comment_id = 1;
+}
+
+message VoteCommentRequest {
+  int32 comment_id = 1;
+  VoteType vote_type = 2;
+}
+
+message VoteCommentResponse {
+  int32 score = 1;
+}
+
+message GetTopCommentsRequest {
+  int32 post_id = 1;
+  int32 n = 2;
+}
+
+message GetTopCommentsResponse {
+  repeated Comment comments = 1;
+}
+
+message ExpandCommentBranchRequest {
+  int32 comment_id = 1;
+  int32 n = 2;
+}
+
+message ExpandCommentBranchResponse {
+  repeated Comment comments = 1;
+}
+
+message MonitorCommentUpdatesRequest {
+  oneof id {
+    int32 post_id = 1;
+    int32 comment_id = 2;
+  }
+}
+
+message MonitorCommentUpdatesResponse {
+  DataType data_type = 1;
+  int32 score = 2;
+}
+
+enum VoteType {
+  VOTE_TYPE_UNSPECIFIED = 0;
+  VOTE_TYPE_UPVOTE = 1;
+  VOTE_TYPE_DOWNVOTE = 2;
+}
+
+message User {
+  string id = 1;
+}
+
+enum PostState {
+  POST_STATE_UNSPECIFIED = 0;
+  POST_STATE_NORMAL = 1;
+  POST_STATE_LOCKED = 2;
+  POST_STATE_HIDDEN = 3;
+}
+
+message Post {
+  int32 id = 1;
+  string title = 2;
+  string text = 3;
+  string url = 4;
+  int32 score = 5;
+  PostState post_state = 6;
+  google.protobuf.Timestamp publication_date = 7;
+  Subreddit subreddit = 8;
+}
+
+enum CommentState {
+  COMMENT_STATE_UNSPECIFIED = 0;
+  COMMENT_STATE_NORMAL = 1;
+  COMMENT_STATE_HIDDEN = 2;
+}
+
+message Comment {
+  int32 id = 1;
+  string text = 2;
+  User author = 3;
+  int32 score = 4;
+  CommentState comment_state = 5;
+  google.protobuf.Timestamp publication_date = 6;
+  oneof parent {
+    Post attached_post = 7;
+    Comment attached_comment = 8;
+  }
+  int32 num_attached = 9;
+}
+
+enum SubredditState {
+  SUBREDDIT_STATE_UNSPECIFIED = 0;
+  SUBREDDIT_STATE_PUBLIC = 1;
+  SUBREDDIT_STATE_PRIVATE = 2;
+  SUBREDDIT_STATE_HIDDEN = 3;
+}
+
+message Subreddit {
+  int32 id = 1;
+  string name = 2;
+  SubredditState subreddit_state = 3;
+  repeated string tags = 4;
+}
+
+enum DataType {
+  DATA_TYPE_UNSPECIFIED = 0;
+  DATA_TYPE_POST = 1;
+  DATA_TYPE_COMMENT = 2;
+}
