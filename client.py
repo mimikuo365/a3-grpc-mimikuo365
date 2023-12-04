@@ -7,7 +7,7 @@ import reddit.v1.reddit_pb2_grpc as reddit_pb2_grpc
 import grpc
 
 
-def run_create_post(stub, title, text, subreddit_name):
+def run_create_post(stub, title="default titile", text="default text", subreddit_name="default subreddit"):
     subreddit = reddit_pb2.Subreddit(name=subreddit_name)
     response: int = stub.CreatePost(
         reddit_pb2.CreatePostRequest(
@@ -23,7 +23,7 @@ def run_create_post(stub, title, text, subreddit_name):
     return id
 
 
-def run_vote_post(stub, post_id, vote_type):
+def run_vote_post(stub, post_id=1, vote_type=1):
     response = stub.VotePost(reddit_pb2.VotePostRequest(post_id=post_id, vote_type=1))
     print(f"[VotePost] Voted for Post {post_id}; score is now {response.score}")
 
