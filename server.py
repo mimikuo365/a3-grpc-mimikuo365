@@ -1,51 +1,69 @@
 from concurrent import futures
 import logging
-import reddit.v1.reddit_pb2 as reddit_pb2
-import reddit.v1.reddit_pb2_grpc as reddit_pb2_grpc
 import grpc
+import proto.reddit_pb2 as reddit_pb2
+import proto.reddit_pb2_grpc as reddit_pb2_grpc
 
-database = {}
+post_database = {}
 
 
 class RedditServer(reddit_pb2_grpc.RedditService):
     def CreatePost(self, request, context):
         post = request.post
-        post.id = len(database) + 1
+        id = post.id = len(post_database) + 1
         post.score = 0
         post.post_state = reddit_pb2.POST_STATE_NORMAL
-        database[post.id] = post
-        print(f"Created Post with ID {post.id}")
-        return reddit_pb2.CreatePostResponse(post_id=post.id)
+        post_database[id] = post
+        print(f"Created Post with ID {id}")
+        return reddit_pb2.CreatePostResponse(post_id=id)
 
     def VotePost(self, request, context):
         id = request.post_id
-        if id not in database:
+        if id not in post_database:
+            print(f"Post ID {post.id} cannot be found")
             return -1
         if request.vote_type == reddit_pb2.VOTE_TYPE_UPVOTE:
-            database[id].score += 1
+            post_database[id].score += 1
         elif request.vote_type == reddit_pb2.VOTE_TYPE_DOWNVOTE:
-            database[id].score -= 1
-        return reddit_pb2.VoteCommentResponse(score=database[id].score)
+            post_database[id].score -= 1
+        return reddit_pb2.VoteCommentResponse(score=post_database[id].score)
 
-    # def GetPost(self, request, context):
-    #     print("GetPost")
-    #     return reddit_pb2.Post()
+    def GetPost(self, request, context):
+        print(f"Get Post with ID {request.post_id}")
+        return reddit_pb2.GetPostResponse(post=database[request.post_id])
 
-    # def CreateComment(self, request, context):
-    #     print("CreateComment")
-    #     return reddit_pb2.Comment()
+    def CreateComment(self, request, context):
+        print("CreateComment")
+        return reddit_pb2.CreateCommentResponse(comment_id=1)
 
-    # def VoteComment(self, request, context):
-    #     print("VoteComment")
-    #     return reddit_pb2.Comment()
+    def VoteComment(self, request, context):
+        print("VoteComment")
+        return reddit_pb2.Comment()
+        #     message VoteCommentResponse {
+        #   int32 score = 1;
+        # }
 
-    # def GetTopComments(self, request, context):
-    #     print("GetTopComments")
-    #     return reddit_pb2.GetTopCommentsResponse()
+    def GetTopComments(self, request, context):
+        print("GetTopComments")
+        # return reddit_pb2.GetTopCommentsResponse()
+        # message GetTopCommentsResponse {
+        #     repeated Comment comments = 1;
+        # }
 
-    # def ExpandCommentBranch(self, request, context):
-    #     print("ExpandCommentBranch")
-    #     return reddit_pb2.ExpandCommentBranchResponse()
+    def ExpandCommentBranch(self, request, context):
+        print("ExpandCommentBranch")
+        return reddit_pb2.ExpandCommentBranchResponse()
+        # message ExpandCommentBranchResponse {
+        #     repeated Comment comments = 1;
+        # }
+
+    def MonitorCommentUpdates(self, request, context):
+        pass
+        # message MonitorCommentUpdatesResponse {
+        #     DataType data_type = 1;
+        #     int32 score = 2;
+        # }
+
 
 def serve():
     port = "50051"

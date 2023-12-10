@@ -1,5 +1,5 @@
 syntax = "proto3";
-package reddit.v1;
+package proto;
 
 import "google/protobuf/timestamp.proto";
 
@@ -126,7 +126,7 @@ message Post {
   int32 score = 5;
   PostState post_state = 6;
   google.protobuf.Timestamp publication_date = 7;
-  Subreddit subreddit = 8;
+  int32 subreddit_id = 8;
 }
 
 enum CommentState {
@@ -138,13 +138,13 @@ enum CommentState {
 message Comment {
   int32 id = 1;
   string text = 2;
-  User author = 3;
+  int32 author_id = 3;
   int32 score = 4;
   CommentState comment_state = 5;
   google.protobuf.Timestamp publication_date = 6;
   oneof parent {
-    Post attached_post = 7;
-    Comment attached_comment = 8;
+    int32 attached_post_id = 7;
+    int32 attached_comment_id = 8;
   }
   int32 num_attached = 9;
 }
