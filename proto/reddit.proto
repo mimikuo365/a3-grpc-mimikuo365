@@ -31,6 +31,7 @@ service RedditService {
 
 message CreatePostResponse {
   int32 post_id = 1;
+  Status status = 2;
 }
 
 message CreatePostRequest {
@@ -44,6 +45,7 @@ message VotePostRequest {
 
 message VotePostResponse {
   int32 score = 1;
+  Status status = 2;
 }
 
 message GetPostRequest {
@@ -52,6 +54,7 @@ message GetPostRequest {
 
 message GetPostResponse {
   Post post = 1;
+  Status status = 2;
 }
 
 message CreateCommentRequest {
@@ -60,6 +63,7 @@ message CreateCommentRequest {
 
 message CreateCommentResponse {
   int32 comment_id = 1;
+  Status status = 2;
 }
 
 message VoteCommentRequest {
@@ -69,6 +73,7 @@ message VoteCommentRequest {
 
 message VoteCommentResponse {
   int32 score = 1;
+  Status status = 2;
 }
 
 message GetTopCommentsRequest {
@@ -78,6 +83,7 @@ message GetTopCommentsRequest {
 
 message GetTopCommentsResponse {
   repeated Comment comments = 1;
+  Status status = 2;
 }
 
 message ExpandCommentBranchRequest {
@@ -87,6 +93,7 @@ message ExpandCommentBranchRequest {
 
 message ExpandCommentBranchResponse {
   repeated Comment comments = 1;
+  Status status = 2;
 }
 
 message MonitorCommentUpdatesRequest {
@@ -127,6 +134,13 @@ message Post {
   PostState post_state = 6;
   google.protobuf.Timestamp publication_date = 7;
   int32 subreddit_id = 8;
+}
+
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_OK = 1;
+  STATUS_ERROR = 2;
+  STATUS_NOT_FOUND = 3;
 }
 
 enum CommentState {

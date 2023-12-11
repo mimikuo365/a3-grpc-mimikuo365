@@ -37,7 +37,9 @@ def vote_post(stub, post_id, vote_type):
     elif vote_type == reddit_pb2.VOTE_TYPE_DOWNVOTE:
         print(f"[VotePost] Downvoted for Post {post_id}; score is now {response.score}")
     else:
-        print(f"[VotePost] Invalid vote_type {vote_type}")
+        print(
+            f"[VotePost] Invalid vote_type {vote_type}. Only 1 (upvote) or 2 (downvote) is allowed."
+        )
 
 
 def run_vote_post(args, stub):
@@ -102,22 +104,27 @@ def run_create_comment(args, stub):
 
 
 def vote_comment(stub, comment_id, vote_type):
-    if vote_type == reddit_pb2.VOTE_TYPE_UPVOTE:
-        print(f"[VoteComment] Upvoted for Comment {comment_id}")
-        stub.VoteComment(
-            reddit_pb2.VoteCommentRequest(
-                comment_id=comment_id, vote_type=reddit_pb2.VOTE_TYPE_UPVOTE
-            )
+    if (
+        vote_type != reddit_pb2.VOTE_TYPE_UPVOTE
+        and vote_type != reddit_pb2.VOTE_TYPE_DOWNVOTE
+    ):
+        print(
+            f"[VoteComment] Invalid vote_type {vote_type}. Only 1 (upvote) or 2 (downvote) is allowed."
         )
-    elif vote_type == reddit_pb2.VOTE_TYPE_DOWNVOTE:
-        print(f"[VoteComment] Downvoted for Comment {comment_id}")
-        stub.VoteComment(    
-            reddit_pb2.VoteCommentRequest(
-                comment_id=comment_id, vote_type=reddit_pb2.VOTE_TYPE_DOWNVOTE
-            )
+
+    response = stub.VoteComment(
+        reddit_pb2.VoteCommentRequest(comment_id=comment_id, vote_type=vote_type)
+    )
+    if response != reddit_pb2.VoteCommentResponse():
+        up_or_down = (
+            "Upvoted" if vote_type == reddit_pb2.VOTE_TYPE_UPVOTE else "Downvoted"
+        )
+        print(
+            f"[VoteComment] {up_or_down} for Comment {comment_id}. Score is now {response.score}"
         )
     else:
-        print(f"[VoteComment] Invalid vote_type {vote_type}")
+        print(f"[VoteComment] Failed to vote for Comment {comment_id}")
+
 
 def run_vote_comment(args, stub):
     if len(args) != 4:
