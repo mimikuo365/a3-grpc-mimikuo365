@@ -5,9 +5,7 @@ import proto.reddit_pb2 as reddit_pb2
 import proto.reddit_pb2_grpc as reddit_pb2_grpc
 
 
-def create_post(
-    stub, title="default titile", text="default text", subreddit_id="default subreddit"
-):
+def create_post(stub, title="default", text="default", subreddit_id=0):
     response: int = stub.CreatePost(
         reddit_pb2.CreatePostRequest(
             post=reddit_pb2.Post(
@@ -22,6 +20,14 @@ def create_post(
     return id
 
 
+def run_create_post(args, stub):
+    if len(args) != 5:
+        print("Usage: python3 client.py create_post <title> <text> <subreddit_id>")
+        sys.exit(1)
+    title, text, subreddit_id = args[2:]
+    create_post(stub, title, text, int(subreddit_id))
+
+
 def vote_post(stub, post_id, vote_type):
     response = stub.VotePost(
         reddit_pb2.VotePostRequest(post_id=post_id, vote_type=vote_type)
@@ -34,47 +40,20 @@ def vote_post(stub, post_id, vote_type):
         print(f"[VotePost] Invalid vote_type {vote_type}")
 
 
-def run_all_tests(stub):
-    print("Will try to run APIs...")
-    post_id: int = create_post(stub, "Test title", "Test content", 1)
-    vote_post(stub, post_id, reddit_pb2.VOTE_TYPE_UPVOTE)
-    # response = stub.GetPost(reddit_pb2.GetPostRequest(post_id=1))
-    # print("Reddit client received: " + response.title)
-    # response = stub.CreateComment(
-    #     reddit_pb2.Comment(post_id=1, content="test comment")
-    # )
-    # print("Reddit client received: " + response.content)
-    # response = stub.VoteComment(
-    #     reddit_pb2.VoteCommentRequest(comment_id=1, vote_type=1)
-    # )
-    # print("Reddit client received: " + response.content)
-    # response = stub.GetTopComments(reddit_pb2.GetTopCommentsRequest(post_id=1))
-    # print("Reddit client received: " + str(response.comments))
-    # response = stub.ExpandCommentBranch(
-    #     reddit_pb2.ExpandCommentBranchRequest(comment_id=1)
-    # )
-    # print("Reddit client received: " + str(response.comments))
-
-
-def get_post(stub, post_id):
-    response = stub.GetPost(reddit_pb2.GetPostRequest(post_id=post_id))
-    print(f"[GetPost] Reddit client received: {response.post.title}")
-
-
-def run_create_post(args, stub):
-    if len(args) != 5:
-        print("Usage: python3 client.py create_post <title> <text> <subreddit_id>")
-        sys.exit(1)
-    title, text, subreddit_id = args[2:]
-    create_post(stub, title, text, int(subreddit_id))
-
-
 def run_vote_post(args, stub):
     if len(args) != 4:
         print("Usage: python3 client.py vote_post <post_id> <vote_type>")
         sys.exit(1)
     post_id, vote_type = args[2:]
     vote_post(stub, int(post_id), int(vote_type))
+
+
+def get_post(stub, post_id):
+    response = stub.GetPost(reddit_pb2.GetPostRequest(post_id=post_id))
+    if response == reddit_pb2.GetPostResponse():
+        print(f"[GetPost] Reddit client received: Post ID {post_id} cannot be found")
+    else:
+        print(f"[GetPost] Reddit client received: {response.post.title}")
 
 
 def run_get_post(args, stub):
@@ -106,7 +85,10 @@ def create_comment(stub, author_id, text, parent_type, parent_id):
                 )
             )
         )
-    print(f"[CreateComment] Created Comment with ID {response.comment_id}")
+    if response != reddit_pb2.CreateCommentResponse():
+        print(f"[CreateComment] Created Comment with ID {response.comment_id}")
+    else:
+        print(f"[CreateComment] Failed to create Comment")
 
 
 def run_create_comment(args, stub):
@@ -118,12 +100,32 @@ def run_create_comment(args, stub):
     author_id, text, parent_type, parent_id = args[2:]
     create_comment(stub, int(author_id), text, parent_type, int(parent_id))
 
+
+def vote_comment(stub, comment_id, vote_type):
+    if vote_type == reddit_pb2.VOTE_TYPE_UPVOTE:
+        print(f"[VoteComment] Upvoted for Comment {comment_id}")
+        stub.VoteComment(
+            reddit_pb2.VoteCommentRequest(
+                comment_id=comment_id, vote_type=reddit_pb2.VOTE_TYPE_UPVOTE
+            )
+        )
+    elif vote_type == reddit_pb2.VOTE_TYPE_DOWNVOTE:
+        print(f"[VoteComment] Downvoted for Comment {comment_id}")
+        stub.VoteComment(    
+            reddit_pb2.VoteCommentRequest(
+                comment_id=comment_id, vote_type=reddit_pb2.VOTE_TYPE_DOWNVOTE
+            )
+        )
+    else:
+        print(f"[VoteComment] Invalid vote_type {vote_type}")
+
 def run_vote_comment(args, stub):
-    # message VoteCommentRequest {
-    #   int32 comment_id = 1;
-    #   VoteType vote_type = 2;
-    # }
-    pass
+    if len(args) != 4:
+        print("Usage: python3 client.py vote_comment <comment_id> <vote_type>")
+        sys.exit(1)
+    comment_id, vote_type = args[2:]
+    vote_comment(stub, int(comment_id), int(vote_type))
+
 
 def run_get_top_comments(args, stub):
     pass
@@ -132,6 +134,7 @@ def run_get_top_comments(args, stub):
     #   int32 n = 2;
     # }
 
+
 def run_expand_comment_branch(args, stub):
     pass
     # message ExpandCommentBranchRequest {
@@ -139,14 +142,18 @@ def run_expand_comment_branch(args, stub):
     #   int32 n = 2;
     # }
 
+
 def run_monitor_comment_updates(args, stub):
     pass
+
+
 # message MonitorCommentUpdatesRequest {
 #   oneof id {
 #     int32 post_id = 1;
 #     int32 comment_id = 2;
 #   }
 # }
+
 
 def run_api(args, stub):
     if len(args) == 1:
@@ -160,8 +167,8 @@ def run_api(args, stub):
         run_get_post(args, stub)
     elif api_name == "create_comment":
         run_create_comment(args, stub)
-    # elif api_name == "vote_comment":
-    #     run_vote_comment(args, stub)
+    elif api_name == "vote_comment":
+        run_vote_comment(args, stub)
     # elif api_name == "get_top_comments":
     #     run_get_top_comments(args, stub)
     # elif api_name == "expand_comment_branch":

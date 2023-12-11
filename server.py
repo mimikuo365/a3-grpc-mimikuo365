@@ -5,6 +5,7 @@ import proto.reddit_pb2 as reddit_pb2
 import proto.reddit_pb2_grpc as reddit_pb2_grpc
 
 post_database = {}
+comment_database = {}
 
 
 class RedditServer(reddit_pb2_grpc.RedditService):
@@ -18,9 +19,10 @@ class RedditServer(reddit_pb2_grpc.RedditService):
         return reddit_pb2.CreatePostResponse(post_id=id)
 
     def VotePost(self, request, context):
+        print("Vote Post")
         id = request.post_id
         if id not in post_database:
-            print(f"Post ID {post.id} cannot be found")
+            print(f"Post ID {id} cannot be found")
             return -1
         if request.vote_type == reddit_pb2.VOTE_TYPE_UPVOTE:
             post_database[id].score += 1
@@ -29,19 +31,43 @@ class RedditServer(reddit_pb2_grpc.RedditService):
         return reddit_pb2.VoteCommentResponse(score=post_database[id].score)
 
     def GetPost(self, request, context):
+        if request.post_id not in post_database:
+            print(f"Post ID {request.post_id} cannot be found")
+            return reddit_pb2.GetPostResponse()
         print(f"Get Post with ID {request.post_id}")
-        return reddit_pb2.GetPostResponse(post=database[request.post_id])
+        return reddit_pb2.GetPostResponse(post=post_database[request.post_id])
 
     def CreateComment(self, request, context):
-        print("CreateComment")
-        return reddit_pb2.CreateCommentResponse(comment_id=1)
+        comment = request.comment
+        if comment.attached_post_id not in post_database:
+            print(f"Post ID {comment.attached_post_id} cannot be found")
+            return reddit_pb2.CreateCommentResponse()
+        elif comment.attached_comment_id not in comment_database:
+            print(f"Comment ID {comment.attached_comment_id} cannot be found")
+            return reddit_pb2.CreateCommentResponse()
+        id = comment.id = len(comment_database) + 1
+        comment.score = 0
+        comment.comment_state = reddit_pb2.COMMENT_STATE_HIDDEN
+        comment_database[id] = {"comment": comment, "child_comment_ids": set()}
+        comment_database[id]["child_comment_ids"] = set()
+        if comment.attached_comment_id != 0:
+            comment_database[comment.attached_comment_id]["child_comment_ids"].add(id)
+        else:  # if comment.attached_post_id != 0:
+            post_database[comment.attached_post_id]["child_comment_ids"].add(id)
+        print(f"Created Comment with ID {id}")
+        return reddit_pb2.CreateCommentResponse(comment_id=id)
 
     def VoteComment(self, request, context):
-        print("VoteComment")
-        return reddit_pb2.Comment()
-        #     message VoteCommentResponse {
-        #   int32 score = 1;
-        # }
+        print("Vote Comment")
+        id = request.comment_id
+        if id not in comment_database:
+            print(f"Comment ID {id} cannot be found")
+            return reddit_pb2.VoteCommentResponse(score=0)
+        if request.vote_type == reddit_pb2.VOTE_TYPE_UPVOTE:
+            post_database[id].score += 1
+        elif request.vote_type == reddit_pb2.VOTE_TYPE_DOWNVOTE:
+            post_database[id].score -= 1
+        return reddit_pb2.VoteCommentResponse(score=post_database[id].score)
 
     def GetTopComments(self, request, context):
         print("GetTopComments")
