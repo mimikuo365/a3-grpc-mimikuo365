@@ -104,8 +104,12 @@ message MonitorCommentUpdatesRequest {
 }
 
 message MonitorCommentUpdatesResponse {
-  DataType data_type = 1;
-  int32 score = 2;
+  oneof id {
+    int32 post_id = 1;
+    int32 comment_id = 2;
+  }
+  int32 score = 3;
+  Status status = 4;
 }
 
 enum VoteType {

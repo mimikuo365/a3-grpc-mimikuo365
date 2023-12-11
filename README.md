@@ -24,7 +24,8 @@ python client.py vote_comment 5 2
 python client.py vote_comment 8 2
 python client.py vote_comment 10 2
 python client.py vote_comment 12 2
-<!-- python client.py get_top_comments 1 1
-python client.py get_top_comments 1 2 -->
+python client.py get_top_comments 1 1
+python client.py get_top_comments 1 2
 python client.py expand_comment_branch 1 1 # return id 6, 11
 python client.py expand_comment_branch 1 2 # return id 5, 6, 9, 10, 11, 12
+python client.py monitor_comment_updates 1 1 2 3

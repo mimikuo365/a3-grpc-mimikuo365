@@ -91,7 +91,7 @@ def create_comment(stub, author_id, text, parent_type, parent_id):
 def run_create_comment(args, stub):
     if len(args) != 6:
         print(
-            "Usage: python3 client.py create_comment <author> <text> <parent_type> <parent_id>"
+            "Usage: python3 client.py create_comment <author_id> <text> <parent_type> <parent_id>"
         )
         sys.exit(1)
     author_id, text, parent_type, parent_id = args[2:]
@@ -146,6 +146,7 @@ def run_get_top_comments(args, stub):
     post_id, n = args[2:]
     get_top_comments(stub, int(post_id), int(n))
 
+
 def expand_comment_branch(stub, comment_id, n):
     response = stub.ExpandCommentBranch(
         reddit_pb2.ExpandCommentBranchRequest(comment_id=comment_id, n=n)
@@ -153,7 +154,10 @@ def expand_comment_branch(stub, comment_id, n):
     if response.status == reddit_pb2.STATUS_OK:
         print(f"[ExpandCommentBranch] Reddit client received: {response.comments}")
     else:
-        print(f"[ExpandCommentBranch] Failed to expand comment branch for Comment {comment_id}")
+        print(
+            f"[ExpandCommentBranch] Failed to expand comment branch for Comment {comment_id}"
+        )
+
 
 def run_expand_comment_branch(args, stub):
     if len(args) != 4:
@@ -163,16 +167,28 @@ def run_expand_comment_branch(args, stub):
     expand_comment_branch(stub, int(comment_id), int(n))
 
 
+def generate_requests(post_id, comment_id_ls):
+    print("Generating requests")
+    # Send the initial request
+    yield reddit_pb2.MonitorCommentUpdatesRequest(post_id=int(post_id))
+
+    # Add comment IDs to the stream
+    for comment_id in comment_id_ls:
+        yield reddit_pb2.MonitorCommentUpdatesRequest(comment_id=int(comment_id))
+
+
 def run_monitor_comment_updates(args, stub):
-    pass
+    if len(args) < 3:
+        print(
+            "Usage: python3 client.py monitor_comment_updates <post_id> <comment_id>..."
+        )
+        sys.exit(1)
+    post_id, comment_id_ls = args[2], args[3:]
+    responses = stub.MonitorCommentUpdates(generate_requests(post_id, comment_id_ls))
 
-
-# message MonitorCommentUpdatesRequest {
-#   oneof id {
-#     int32 post_id = 1;
-#     int32 comment_id = 2;
-#   }
-# }
+    # Monitor server responses
+    for response in responses:
+        print(response)
 
 
 def run_api(args, stub):
@@ -194,10 +210,20 @@ def run_api(args, stub):
         run_get_top_comments(args, stub)
     elif api_name == "expand_comment_branch":
         run_expand_comment_branch(args, stub)
-    # else:
-    #     print(f"Invalid API name {api_name}")
-    #     sys.exit(1)
+    elif api_name == "monitor_comment_updates":
+        run_monitor_comment_updates(args, stub)
+    else:
+        print(f"Invalid API name {api_name}")
+        sys.exit(1)
 
+
+def create_client():
+    channel = grpc.insecure_channel("localhost:50051")
+    stub = reddit_pb2_grpc.RedditServiceStub(channel)
+    return stub, channel
+
+def close_channel(channel):
+    channel.close()
 
 if __name__ == "__main__":
     args = sys.argv
