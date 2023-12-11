@@ -12,6 +12,9 @@ def create_post(stub, title="default", text="default", subreddit_id=0):
         subreddit_id=subreddit_id,
     )
     response = stub.CreatePost(reddit_pb2.CreatePostRequest(post=post))
+    if response.status != reddit_pb2.STATUS_OK:
+        print(f"[CreatePost] Failed to create Post")
+        return
     post_id = response.post_id
     print(f"[CreatePost] Created Post with ID {post_id}")
     return post_id
@@ -29,7 +32,9 @@ def vote_post(stub, post_id, vote_type):
     response = stub.VotePost(
         reddit_pb2.VotePostRequest(post_id=post_id, vote_type=vote_type)
     )
-    if vote_type == reddit_pb2.VOTE_TYPE_UPVOTE:
+    if response.status != reddit_pb2.STATUS_OK:
+        print(f"[VotePost] Failed to vote for Post {post_id}")
+    elif vote_type == reddit_pb2.VOTE_TYPE_UPVOTE:
         print(f"[VotePost] Upvoted for Post {post_id}; score is now {response.score}")
     elif vote_type == reddit_pb2.VOTE_TYPE_DOWNVOTE:
         print(f"[VotePost] Downvoted for Post {post_id}; score is now {response.score}")
@@ -49,7 +54,7 @@ def run_vote_post(args, stub):
 
 def get_post(stub, post_id):
     response = stub.GetPost(reddit_pb2.GetPostRequest(post_id=post_id))
-    if response == reddit_pb2.GetPostResponse():
+    if response.status != reddit_pb2.STATUS_OK:
         print(f"[GetPost] Reddit client received: Post ID {post_id} cannot be found")
     else:
         print(f"[GetPost] Reddit client received: {response.post.title}")
@@ -110,7 +115,7 @@ def vote_comment(stub, comment_id, vote_type):
     response = stub.VoteComment(
         reddit_pb2.VoteCommentRequest(comment_id=comment_id, vote_type=vote_type)
     )
-    if response != reddit_pb2.VoteCommentResponse():
+    if response.status == reddit_pb2.STATUS_OK:
         up_or_down = (
             "Upvoted" if vote_type == reddit_pb2.VOTE_TYPE_UPVOTE else "Downvoted"
         )
