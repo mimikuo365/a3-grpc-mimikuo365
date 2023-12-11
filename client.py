@@ -6,18 +6,15 @@ import proto.reddit_pb2_grpc as reddit_pb2_grpc
 
 
 def create_post(stub, title="default", text="default", subreddit_id=0):
-    response: int = stub.CreatePost(
-        reddit_pb2.CreatePostRequest(
-            post=reddit_pb2.Post(
-                title=title,
-                text=text,
-                subreddit_id=subreddit_id,
-            )
-        )
+    post = reddit_pb2.Post(
+        title=title,
+        text=text,
+        subreddit_id=subreddit_id,
     )
-    id: int = response.post_id
-    print("[CreatePost] Created Post with ID " + str(id))
-    return id
+    response = stub.CreatePost(reddit_pb2.CreatePostRequest(post=post))
+    post_id = response.post_id
+    print(f"[CreatePost] Created Post with ID {post_id}")
+    return post_id
 
 
 def run_create_post(args, stub):
@@ -67,27 +64,25 @@ def run_get_post(args, stub):
 
 
 def create_comment(stub, author_id, text, parent_type, parent_id):
-    if parent_type == "post":
-        response = stub.CreateComment(
-            reddit_pb2.CreateCommentRequest(
-                comment=reddit_pb2.Comment(
-                    author_id=author_id,
-                    text=text,
-                    attached_post_id=parent_id,
-                )
-            )
-        )
-    else:
-        response = stub.CreateComment(
-            reddit_pb2.CreateCommentRequest(
-                comment=reddit_pb2.Comment(
-                    author_id=author_id,
-                    text=text,
-                    attached_comment_id=parent_id,
-                )
-            )
-        )
-    if response != reddit_pb2.CreateCommentResponse():
+    parent_fields = {
+        "post": "attached_post_id",
+        "comment": "attached_comment_id"
+    }
+    field_name = parent_fields.get(parent_type)
+    if field_name is None:
+        print(f"[CreateComment] Invalid parent_type: {parent_type}")
+        return
+
+    comment = reddit_pb2.Comment(
+        author_id=author_id,
+        text=text,
+    )
+    setattr(comment, field_name, parent_id)
+
+    response = stub.CreateComment(
+        reddit_pb2.CreateCommentRequest(comment=comment)
+    )
+    if response.status == reddit_pb2.STATUS_OK:
         print(f"[CreateComment] Created Comment with ID {response.comment_id}")
     else:
         print(f"[CreateComment] Failed to create Comment")
@@ -163,8 +158,9 @@ def run_monitor_comment_updates(args, stub):
 
 
 def run_api(args, stub):
-    if len(args) == 1:
-        run_all_tests(stub)
+    if len(args) < 2:
+        print("Usage: python3 client.py <api_name> <args>")
+        sys.exit(1)
     api_name = args[1]
     if api_name == "create_post":
         run_create_post(args, stub)

@@ -140,7 +140,7 @@ enum Status {
   STATUS_UNSPECIFIED = 0;
   STATUS_OK = 1;
   STATUS_ERROR = 2;
-  STATUS_NOT_FOUND = 3;
+  STATUS_ID_NOT_FOUND = 3;
 }
 
 enum CommentState {
@@ -156,7 +156,7 @@ message Comment {
   int32 score = 4;
   CommentState comment_state = 5;
   google.protobuf.Timestamp publication_date = 6;
-  oneof parent {
+  oneof parent_id {
     int32 attached_post_id = 7;
     int32 attached_comment_id = 8;
   }

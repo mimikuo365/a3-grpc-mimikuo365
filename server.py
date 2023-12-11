@@ -39,24 +39,35 @@ class RedditServer(reddit_pb2_grpc.RedditService):
 
     def CreateComment(self, request, context):
         comment = request.comment
-        selected_post = comment.attached_post_id != None
-        if selected_post and comment.attached_post_id not in post_database:
-            print(f"Post ID {comment.attached_post_id} cannot be found")
-            return reddit_pb2.CreateCommentResponse()
-        elif not selected_post and comment.attached_comment_id not in comment_database:
-            print(f"Comment ID {comment.attached_comment_id} cannot be found")
-            return reddit_pb2.CreateCommentResponse()
+        selected_post = comment.attached_post_id is not None
+        
+        if selected_post:
+            if comment.attached_post_id not in post_database:
+                print(f"Post ID {comment.attached_post_id} cannot be found")
+                return reddit_pb2.CreateCommentResponse(
+                    status=reddit_pb2.STATUS_ID_NOT_FOUND
+                )
+        else:
+            if comment.attached_comment_id not in comment_database:
+                print(f"Comment ID {comment.attached_comment_id} cannot be found")
+                return reddit_pb2.CreateCommentResponse(
+                    status=reddit_pb2.STATUS_ID_NOT_FOUND
+                )
+        
+        # setup comment
         id = comment.id = len(comment_database) + 1
         comment.score = 0
-        comment.comment_state = reddit_pb2.COMMENT_STATE_HIDDEN
+        comment.comment_state = reddit_pb2.COMMENT_STATE_NORMAL
         comment_database[id] = {"comment": comment, "child_comment_ids": set()}
-        comment_database[id]["child_comment_ids"] = set()
-        if not selected_post and comment.attached_comment_id != 0:
+        
+        # add attached comment to parent's attached comment list
+        if not selected_post:
             comment_database[comment.attached_comment_id]["child_comment_ids"].add(id)
         else:
             post_database[comment.attached_post_id]["child_comment_ids"].add(id)
+        
         print(f"Created Comment with ID {id}")
-        return reddit_pb2.CreateCommentResponse(comment_id=id)
+        return reddit_pb2.CreateCommentResponse(comment_id=id, status=reddit_pb2.STATUS_OK)
 
     def VoteComment(self, request, context):
         print("Vote Comment")
