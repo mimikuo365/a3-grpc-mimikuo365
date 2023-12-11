@@ -69,10 +69,7 @@ def run_get_post(args, stub):
 
 
 def create_comment(stub, author_id, text, parent_type, parent_id):
-    parent_fields = {
-        "post": "attached_post_id",
-        "comment": "attached_comment_id"
-    }
+    parent_fields = {"post": "attached_post_id", "comment": "attached_comment_id"}
     field_name = parent_fields.get(parent_type)
     if field_name is None:
         print(f"[CreateComment] Invalid parent_type: {parent_type}")
@@ -84,9 +81,7 @@ def create_comment(stub, author_id, text, parent_type, parent_id):
     )
     setattr(comment, field_name, parent_id)
 
-    response = stub.CreateComment(
-        reddit_pb2.CreateCommentRequest(comment=comment)
-    )
+    response = stub.CreateComment(reddit_pb2.CreateCommentRequest(comment=comment))
     if response.status == reddit_pb2.STATUS_OK:
         print(f"[CreateComment] Created Comment with ID {response.comment_id}")
     else:
@@ -134,12 +129,22 @@ def run_vote_comment(args, stub):
     vote_comment(stub, int(comment_id), int(vote_type))
 
 
+def get_top_comments(stub, post_id, n):
+    response = stub.GetTopComments(
+        reddit_pb2.GetTopCommentsRequest(post_id=post_id, n=n)
+    )
+    if response.status == reddit_pb2.STATUS_OK:
+        print(f"[GetTopComments] Reddit client received: {response.comments}")
+    else:
+        print(f"[GetTopComments] Failed to get top {n} comments for Post {post_id}")
+
+
 def run_get_top_comments(args, stub):
-    pass
-    # message GetTopCommentsRequest {
-    #   int32 post_id = 1;
-    #   int32 n = 2;
-    # }
+    if len(args) != 4:
+        print("Usage: python3 client.py get_top_comments <post_id> <n>")
+        sys.exit(1)
+    post_id, n = args[2:]
+    get_top_comments(stub, int(post_id), int(n))
 
 
 def run_expand_comment_branch(args, stub):
@@ -177,8 +182,8 @@ def run_api(args, stub):
         run_create_comment(args, stub)
     elif api_name == "vote_comment":
         run_vote_comment(args, stub)
-    # elif api_name == "get_top_comments":
-    #     run_get_top_comments(args, stub)
+    elif api_name == "get_top_comments":
+        run_get_top_comments(args, stub)
     # elif api_name == "expand_comment_branch":
     #     run_expand_comment_branch(args, stub)
     # else:

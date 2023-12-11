@@ -70,13 +70,15 @@ class RedditServer(reddit_pb2_grpc.RedditService):
 
         # setup comment
         id = comment.id = len(comment_database) + 1
-        comment.score = 0
+        comment.num_attached = comment.score = 0
         comment.comment_state = reddit_pb2.COMMENT_STATE_NORMAL
         comment_database[id] = {"comment": comment, "child_comment_ids": set()}
 
         # add attached comment to parent's attached comment list
         if not selected_post:
-            comment_database[comment.attached_comment_id]["child_comment_ids"].add(id)
+            parent_id = comment.attached_comment_id
+            comment_database[parent_id]["child_comment_ids"].add(id)
+            comment_database[parent_id]["comment"].num_attached += 1
         else:
             post_database[comment.attached_post_id]["child_comment_ids"].add(id)
 
@@ -102,10 +104,22 @@ class RedditServer(reddit_pb2_grpc.RedditService):
 
     def GetTopComments(self, request, context):
         print("GetTopComments")
-        # return reddit_pb2.GetTopCommentsResponse()
-        # message GetTopCommentsResponse {
-        #     repeated Comment comments = 1;
-        # }
+        if not check_post_id(request.post_id):
+            return reddit_pb2.GetTopCommentsResponse(
+                status=reddit_pb2.STATUS_ID_NOT_FOUND
+            )
+        comments = post_database[request.post_id]["child_comment_ids"]
+        # sort comments by score
+        comments = sorted(
+            comments,
+            key=lambda comment_id: comment_database[comment_id]["comment"].score,
+            reverse=True,
+        )
+        for i in range(len(comments)):
+            comments[i] = comment_database[comments[i]]["comment"]
+        return reddit_pb2.GetTopCommentsResponse(
+            comments=comments[:request.n], status=reddit_pb2.STATUS_OK
+        )
 
     def ExpandCommentBranch(self, request, context):
         print("ExpandCommentBranch")
