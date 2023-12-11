@@ -22,6 +22,27 @@ def check_comment_id(comment_id):
     return True
 
 
+def get_top_comments(n, post_id=None, comment_id=None):
+    if post_id is not None:
+        if not check_post_id(post_id):
+            return None
+        comments = post_database[post_id]["child_comment_ids"]
+    else:
+        if not check_comment_id(comment_id):
+            return None
+        comments = comment_database[comment_id]["child_comment_ids"]
+    # sort comments by score
+    comments = sorted(
+        comments,
+        key=lambda comment_id: comment_database[comment_id]["comment"].score,
+        reverse=True,
+    )
+    print("Get top comment:", comments)
+    for i in range(len(comments)):
+        comments[i] = comment_database[comments[i]]["comment"]
+    return comments[:n]
+
+
 class RedditServer(reddit_pb2_grpc.RedditService):
     def CreatePost(self, request, context):
         post = request.post
@@ -53,7 +74,7 @@ class RedditServer(reddit_pb2_grpc.RedditService):
 
     def CreateComment(self, request, context):
         comment = request.comment
-        selected_post = comment.attached_post_id is not None
+        selected_post = comment.attached_post_id != 0
 
         if selected_post:
             if not check_post_id(comment.attached_post_id):
@@ -108,25 +129,38 @@ class RedditServer(reddit_pb2_grpc.RedditService):
             return reddit_pb2.GetTopCommentsResponse(
                 status=reddit_pb2.STATUS_ID_NOT_FOUND
             )
-        comments = post_database[request.post_id]["child_comment_ids"]
-        # sort comments by score
-        comments = sorted(
-            comments,
-            key=lambda comment_id: comment_database[comment_id]["comment"].score,
-            reverse=True,
-        )
-        for i in range(len(comments)):
-            comments[i] = comment_database[comments[i]]["comment"]
+        comments = get_top_comments(request.n, post_id=request.post_id)
+        if comments is None:
+            return reddit_pb2.GetTopCommentsResponse(
+                status=reddit_pb2.STATUS_ID_NOT_FOUND
+            )
         return reddit_pb2.GetTopCommentsResponse(
-            comments=comments[:request.n], status=reddit_pb2.STATUS_OK
+            comments=comments[: request.n], status=reddit_pb2.STATUS_OK
         )
 
     def ExpandCommentBranch(self, request, context):
         print("ExpandCommentBranch")
-        return reddit_pb2.ExpandCommentBranchResponse()
-        # message ExpandCommentBranchResponse {
-        #     repeated Comment comments = 1;
-        # }
+        if not check_comment_id(request.comment_id):
+            return reddit_pb2.ExpandCommentBranchResponse(
+                status=reddit_pb2.STATUS_ID_NOT_FOUND
+            )
+        comments = get_top_comments(request.n, comment_id=request.comment_id)
+        if comments is None:
+            return reddit_pb2.GetTopCommentsResponse(
+                status=reddit_pb2.STATUS_ID_NOT_FOUND
+            )
+        print("Comments:", comments)
+        for comment in comments:
+            print("Expand:", comment)
+            new_comments = get_top_comments(request.n, comment_id=comment.id)
+            if new_comments is None:
+                return reddit_pb2.GetTopCommentsResponse(
+                    status=reddit_pb2.STATUS_ID_NOT_FOUND
+                )
+            comments.extend(new_comments)
+        return reddit_pb2.ExpandCommentBranchResponse(
+            comments=comments, status=reddit_pb2.STATUS_OK
+        )
 
     def MonitorCommentUpdates(self, request, context):
         pass

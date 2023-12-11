@@ -146,13 +146,21 @@ def run_get_top_comments(args, stub):
     post_id, n = args[2:]
     get_top_comments(stub, int(post_id), int(n))
 
+def expand_comment_branch(stub, comment_id, n):
+    response = stub.ExpandCommentBranch(
+        reddit_pb2.ExpandCommentBranchRequest(comment_id=comment_id, n=n)
+    )
+    if response.status == reddit_pb2.STATUS_OK:
+        print(f"[ExpandCommentBranch] Reddit client received: {response.comments}")
+    else:
+        print(f"[ExpandCommentBranch] Failed to expand comment branch for Comment {comment_id}")
 
 def run_expand_comment_branch(args, stub):
-    pass
-    # message ExpandCommentBranchRequest {
-    #   int32 comment_id = 1;
-    #   int32 n = 2;
-    # }
+    if len(args) != 4:
+        print("Usage: python3 client.py expand_comment_branch <comment_id> <n>")
+        sys.exit(1)
+    comment_id, n = args[2:]
+    expand_comment_branch(stub, int(comment_id), int(n))
 
 
 def run_monitor_comment_updates(args, stub):
@@ -184,8 +192,8 @@ def run_api(args, stub):
         run_vote_comment(args, stub)
     elif api_name == "get_top_comments":
         run_get_top_comments(args, stub)
-    # elif api_name == "expand_comment_branch":
-    #     run_expand_comment_branch(args, stub)
+    elif api_name == "expand_comment_branch":
+        run_expand_comment_branch(args, stub)
     # else:
     #     print(f"Invalid API name {api_name}")
     #     sys.exit(1)
