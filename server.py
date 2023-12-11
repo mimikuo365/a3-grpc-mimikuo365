@@ -14,7 +14,7 @@ class RedditServer(reddit_pb2_grpc.RedditService):
         self.comment_database = {}
         self.monitor_id = {"post": set(), "comment": set()}
 
-    def CheckScoreObserver(self, id, isPost):
+    def check_score_observer(self, id, isPost):
         database = self.post_database
         field_name = "post"
         monitored_id = self.monitor_id["post"]
@@ -79,7 +79,7 @@ class RedditServer(reddit_pb2_grpc.RedditService):
             return reddit_pb2.VotePostResponse(status=reddit_pb2.STATUS_ID_NOT_FOUND)
         vote = 1 if (request.vote_type == reddit_pb2.VOTE_TYPE_UPVOTE) else -1
         self.post_database[id]["post"].score += vote
-        self.CheckScoreObserver(id, True)
+        self.check_score_observer(id, True)
         return reddit_pb2.VoteCommentResponse(
             score=self.post_database[id]["post"].score, status=reddit_pb2.STATUS_OK
         )
@@ -139,7 +139,7 @@ class RedditServer(reddit_pb2_grpc.RedditService):
         elif request.vote_type == reddit_pb2.VOTE_TYPE_DOWNVOTE:
             self.comment_database[id]["comment"].score -= 1
 
-        self.CheckScoreObserver(id, False)
+        self.check_score_observer(id, False)
         return reddit_pb2.VoteCommentResponse(
             score=self.comment_database[id]["comment"].score,
             status=reddit_pb2.STATUS_OK,
