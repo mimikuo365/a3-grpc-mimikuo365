@@ -135,6 +135,7 @@ class RedditClient:
             print(f"[GetTopComments] Reddit client received: {response.comments}")
         else:
             print(f"[GetTopComments] Failed to get top {n} comments for Post {post_id}")
+        return response
 
     def run_get_top_comments(self, args):
         if len(args) != 4:
@@ -153,6 +154,7 @@ class RedditClient:
             print(
                 f"[ExpandCommentBranch] Failed to expand comment branch for Comment {comment_id}"
             )
+        return response
 
     def run_expand_comment_branch(self, args):
         if len(args) != 4:

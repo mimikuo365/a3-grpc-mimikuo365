@@ -7,8 +7,12 @@ def setup_reddit(client):
     client.create_comment(1, "comment2", "post", 1)  # Comment 2 attached to post 1
     client.create_comment(1, "comment3", "post", 1)  # Comment 3 attached to post 1
 
-    client.create_comment(1, "comment4", "comment", 1)  # Comment 4 attached to comment 1
-    client.create_comment(1, "comment5", "comment", 1)  # Comment 5 attached to comment 1
+    client.create_comment(
+        1, "comment4", "comment", 1
+    )  # Comment 4 attached to comment 1
+    client.create_comment(
+        1, "comment5", "comment", 1
+    )  # Comment 5 attached to comment 1
 
     client.vote_comment(1, 1)  # Comment 1 upvoted
     client.vote_comment(2, 2)  # Comment 2 downvoted
@@ -20,8 +24,11 @@ def setup_reddit(client):
 def run_reddit(post_id, client):
     print("running reddit")
     client.get_post(post_id)
-    client.expand_comment_branch(1, 1)
-    client.get_top_comments(1, 2)
+    response = client.get_top_comments(1, 2)
+    print(response)
+    print("===========================")
+    comment_id = response.comments[0].id
+    return client.expand_comment_branch(comment_id, 1)
 
 
 def run_example():
