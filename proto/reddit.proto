@@ -180,9 +180,3 @@ message Subreddit {
   SubredditState subreddit_state = 3;
   repeated string tags = 4;
 }
-
-enum DataType {
-  DATA_TYPE_UNSPECIFIED = 0;
-  DATA_TYPE_POST = 1;
-  DATA_TYPE_COMMENT = 2;
-}
