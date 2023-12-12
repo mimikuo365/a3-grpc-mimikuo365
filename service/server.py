@@ -1,8 +1,8 @@
 from concurrent import futures
 import logging
 import grpc
-import proto.reddit_pb2 as reddit_pb2
-import proto.reddit_pb2_grpc as reddit_pb2_grpc
+from proto import reddit_pb2
+from proto import reddit_pb2_grpc
 import queue
 import time
 

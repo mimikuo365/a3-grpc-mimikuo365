@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from reddit_example import run_reddit
+from example.reddit_example import run_reddit
 import grpc
 import proto.reddit_pb2 as reddit_pb2
 import proto.reddit_pb2_grpc as reddit_pb2_grpc

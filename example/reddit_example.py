@@ -1,4 +1,4 @@
-from client import RedditClient
+from service.client import RedditClient
 
 
 def setup_reddit(client):
